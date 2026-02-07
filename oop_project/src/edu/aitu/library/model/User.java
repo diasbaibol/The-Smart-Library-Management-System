@@ -16,12 +16,14 @@ public abstract class User {
     public final void setName(String name) { this.name = name; }
     public final Role getRole() { return role; }
 
-    // Polymorphic behavior: different user types can have different borrow limits
     public abstract int getBorrowLimit();
+    public abstract int getLoanPeriodDays();
 
     @Override
     public String toString() {
-        return "User{id=" + id + ", name='" + name + "', role=" + role + ", limit=" + getBorrowLimit() + "}";
+        return "User{id=" + id + ", name='" + name + "', role=" + role +
+                ", limit=" + getBorrowLimit() + ", loanDays=" + getLoanPeriodDays() + "}";
     }
 }
+
 

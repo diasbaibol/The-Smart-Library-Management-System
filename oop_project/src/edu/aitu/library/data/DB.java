@@ -12,8 +12,11 @@ public class DB {
     }
 
     public Connection getConnection() throws SQLException {
-        // For SQLite: "jdbc:sqlite:library.db"
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("SQLite JDBC driver not found.", e);
+        }
         return DriverManager.getConnection(url);
     }
 }
-

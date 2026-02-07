@@ -12,15 +12,12 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
-        // SQLite DB file will be created automatically in project directory
         String url = "jdbc:sqlite:library.db";
 
         try (Connection conn = new DB(url).getConnection()) {
             SchemaInitializer.init(conn);
-
             LibraryService service = new LibraryService(conn);
             runMenu(service);
-
         } catch (Exception e) {
             System.out.println("Fatal error: " + e.getMessage());
             e.printStackTrace();
@@ -39,6 +36,8 @@ public class Main {
             System.out.println("5) Borrow book");
             System.out.println("6) Return book");
             System.out.println("7) List loans");
+            System.out.println("8) Reserve book");
+            System.out.println("9) List reservations");
             System.out.println("0) Exit");
             System.out.print("Choose: ");
 
@@ -53,6 +52,8 @@ public class Main {
                     case "5" -> borrowBook(sc, service);
                     case "6" -> returnBook(sc, service);
                     case "7" -> service.listLoans().forEach(System.out::println);
+                    case "8" -> reserveBook(sc, service);
+                    case "9" -> service.listReservations().forEach(System.out::println);
                     case "0" -> {
                         System.out.println("Bye.");
                         return;
@@ -61,6 +62,8 @@ public class Main {
                 }
             } catch (LibraryException e) {
                 System.out.println("Operation failed: " + e.getMessage());
+            } catch (Exception e) {
+                System.out.println("Unexpected error: " + e.getMessage());
             }
         }
     }
@@ -104,5 +107,16 @@ public class Main {
 
         service.returnBook(bookId);
         System.out.println("Book returned successfully.");
+    }
+
+    private static void reserveBook(Scanner sc, LibraryService service) throws LibraryException {
+        System.out.print("User id: ");
+        int userId = Integer.parseInt(sc.nextLine().trim());
+
+        System.out.print("Book id: ");
+        int bookId = Integer.parseInt(sc.nextLine().trim());
+
+        int resId = service.reserveBook(userId, bookId);
+        System.out.println("Reservation created with id=" + resId);
     }
 }

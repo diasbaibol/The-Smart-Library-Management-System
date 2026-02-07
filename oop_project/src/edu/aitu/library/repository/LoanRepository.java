@@ -34,12 +34,16 @@ public class LoanRepository {
         }
     }
 
-    public int createLoan(int userId, int bookId) throws SQLException {
-        String sql = "INSERT INTO loans(user_id, book_id, loan_date, return_date) VALUES(?, ?, ?, NULL)";
+    public int createLoan(int userId, int bookId, LocalDate dueDate) throws SQLException {
+        String sql = """
+            INSERT INTO loans(user_id, book_id, loan_date, due_date, return_date, fine_cents)
+            VALUES(?, ?, ?, ?, NULL, 0)
+        """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, userId);
             ps.setInt(2, bookId);
             ps.setString(3, LocalDate.now().toString());
+            ps.setString(4, dueDate.toString());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
@@ -48,18 +52,19 @@ public class LoanRepository {
         throw new SQLException("Failed to create loan.");
     }
 
-    public void closeLoan(int loanId) throws SQLException {
-        String sql = "UPDATE loans SET return_date = ? WHERE id = ? AND return_date IS NULL";
+    public void closeLoanWithFine(int loanId, int fineCents) throws SQLException {
+        String sql = "UPDATE loans SET return_date=?, fine_cents=? WHERE id=? AND return_date IS NULL";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, LocalDate.now().toString());
-            ps.setInt(2, loanId);
+            ps.setInt(2, fineCents);
+            ps.setInt(3, loanId);
             ps.executeUpdate();
         }
     }
 
     public Loan findOpenLoanByBook(int bookId) throws SQLException {
         String sql = """
-            SELECT id, user_id, book_id, loan_date, return_date
+            SELECT id, user_id, book_id, loan_date, due_date, return_date, fine_cents
             FROM loans
             WHERE book_id = ? AND return_date IS NULL
             ORDER BY id DESC
@@ -75,7 +80,11 @@ public class LoanRepository {
     }
 
     public List<Loan> listAllLoans() throws SQLException {
-        String sql = "SELECT id, user_id, book_id, loan_date, return_date FROM loans ORDER BY id DESC";
+        String sql = """
+            SELECT id, user_id, book_id, loan_date, due_date, return_date, fine_cents
+            FROM loans
+            ORDER BY id DESC
+        """;
         List<Loan> loans = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -89,9 +98,10 @@ public class LoanRepository {
         int userId = rs.getInt("user_id");
         int bookId = rs.getInt("book_id");
         LocalDate loanDate = LocalDate.parse(rs.getString("loan_date"));
-        String returnDateStr = rs.getString("return_date");
-        LocalDate returnDate = (returnDateStr == null) ? null : LocalDate.parse(returnDateStr);
-        return new Loan(id, userId, bookId, loanDate, returnDate);
+        LocalDate dueDate = LocalDate.parse(rs.getString("due_date"));
+        String returnStr = rs.getString("return_date");
+        LocalDate returnDate = (returnStr == null) ? null : LocalDate.parse(returnStr);
+        int fineCents = rs.getInt("fine_cents");
+        return new Loan(id, userId, bookId, loanDate, dueDate, returnDate, fineCents);
     }
 }
-

@@ -9,5 +9,9 @@ public class Librarian extends User {
     public int getBorrowLimit() {
         return 10;
     }
-}
 
+    @Override
+    public int getLoanPeriodDays() {
+        return 30;
+    }
+}

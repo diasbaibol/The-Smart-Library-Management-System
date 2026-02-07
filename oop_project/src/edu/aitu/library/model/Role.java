@@ -9,4 +9,3 @@ public enum Role {
         return Role.valueOf(value.trim().toUpperCase());
     }
 }
-

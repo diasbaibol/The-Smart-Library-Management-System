@@ -9,5 +9,10 @@ public class Member extends User {
     public int getBorrowLimit() {
         return 3;
     }
+
+    @Override
+    public int getLoanPeriodDays() {
+        return 14;
+    }
 }
 
