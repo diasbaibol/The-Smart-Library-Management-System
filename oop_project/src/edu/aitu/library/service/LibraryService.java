@@ -78,18 +78,27 @@ public class LibraryService {
 
     public int reserveBook(int userId, int bookId) throws LibraryException {
         try {
+            reservationRepo.expireOldReservations(LocalDate.now());
+
             User user = userRepo.findById(userId);
             if (user == null) throw new NotFoundException("User not found: id=" + userId);
 
             Book book = bookRepo.findById(bookId);
             if (book == null) throw new NotFoundException("Book not found: id=" + bookId);
 
-            if (book.isAvailable() && !loanRepo.hasOpenLoanForBook(bookId)) {
-                throw new ReservationNotAllowedException("Book is available; borrow it instead of reserving.");
-            }
-
             if (reservationRepo.hasActiveReservation(userId, bookId)) {
                 throw new ReservationExistsException("You already have an active reservation for this book.");
+            }
+
+            boolean freeToTake = book.isAvailable() && !loanRepo.hasOpenLoanForBook(bookId);
+
+            if (freeToTake) {
+                try {
+                    int loanId = borrowBook(userId, bookId);
+                    return -loanId;
+                } catch (BorrowLimitExceededException | ReservationNotAllowedException | BookUnavailableException e) {
+                    // fall through to reservation creation
+                }
             }
 
             LocalDate expiresAt = LocalDate.now().plusDays(RESERVATION_EXPIRES_DAYS);
@@ -102,7 +111,7 @@ public class LibraryService {
         }
     }
 
-    public void borrowBook(int userId, int bookId) throws LibraryException {
+    public int borrowBook(int userId, int bookId) throws LibraryException {
         boolean oldAutoCommit = true;
         try {
             oldAutoCommit = conn.getAutoCommit();
@@ -145,6 +154,8 @@ public class LibraryService {
             }
 
             conn.commit();
+            return loanId;
+
         } catch (LibraryException e) {
             rollbackQuietly();
             throw e;

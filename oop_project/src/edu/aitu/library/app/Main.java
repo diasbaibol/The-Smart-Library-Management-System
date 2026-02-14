@@ -97,8 +97,8 @@ public class Main {
         System.out.print("Book id: ");
         int bookId = Integer.parseInt(sc.nextLine().trim());
 
-        service.borrowBook(userId, bookId);
-        System.out.println("Book borrowed successfully.");
+        int loanId = service.borrowBook(userId, bookId);
+        System.out.println("Book borrowed successfully. Loan id=" + loanId);
     }
 
     private static void returnBook(Scanner sc, LibraryService service) throws LibraryException {
@@ -116,7 +116,12 @@ public class Main {
         System.out.print("Book id: ");
         int bookId = Integer.parseInt(sc.nextLine().trim());
 
-        int resId = service.reserveBook(userId, bookId);
-        System.out.println("Reservation created with id=" + resId);
+        int result = service.reserveBook(userId, bookId);
+
+        if (result < 0) {
+            System.out.println("Book was available, borrowed automatically. Loan id=" + (-result));
+        } else {
+            System.out.println("Reservation created with id=" + result);
+        }
     }
 }
